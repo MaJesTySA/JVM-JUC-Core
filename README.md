@@ -2,8 +2,6 @@
 
 尚硅谷周阳老师课程——[互联网大厂高频重点面试题第2季](https://www.bilibili.com/video/av48961087/)笔记
 
-[TOC]目录
-
 # JMM
 
 JMM是指Java**内存模型**，不是Java**内存布局**，不是所谓的栈、堆、方法区。
@@ -14,11 +12,11 @@ JMM是指Java**内存模型**，不是Java**内存布局**，不是所谓的栈�
 
 JMM可能带来**可见性**、**原子性**和**有序性**问题。所谓可见性，就是某个线程对主内存内容的更改，应该立刻通知到其它线程。原子性是指一个操作是不可分割的，不能执行到一半，就不执行了。所谓有序性，就是指令是有序的，不会被重排。
 
-## volatile关键字
+# volatile关键字
 
 volatile关键字是Java提供的一种**轻量级**同步机制。它能够保证**可见性**和**有序性**，但是不能保证**原子性**。
 
-### 可见性
+## 可见性
 
 [可见性测试](https://github.com/MaJesTySA/JVM-JUC-Core/blob/master/src/thread/VolatileDemo.java)
 
@@ -79,7 +77,7 @@ main	 mission is over. main get number value: 60
 
 可见某个线程对number的修改，会立刻反映到主内存上。
 
-### 原子性
+## 原子性
 
 volatile并**不能保证操作的原子性**。这是因为，比如一条number++的操作，会形成3条指令。
 
@@ -122,7 +120,7 @@ main	 int type finally number value: 17542
 main	 AtomicInteger type finally number value: 20000
 ```
 
-### 有序性
+## 有序性
 
 [有序性案例](https://github.com/MaJesTySA/JVM-JUC-Core/blob/master/src/thread/ResortSeqDemo.java)
 
@@ -139,7 +137,7 @@ y = x * x;  //语句4
 
 volatile底层是用CPU的**内存屏障（Memory Barrier）指令**来实现的，有两个作用，一个是保证特定操作的顺序性，二是保证变量的可见性。在指令之间插入一条Memory Barrier指令，告诉编译器和CPU，在Memory Barrier指令之间的指令不能被重排序。
 
-## 单例模式的安全问题
+# 单例模式的安全问题
 
 常见的DCL（Double Check Lock）模式虽然加了同步，但是在多线程下依然会有线程安全问题。
 
