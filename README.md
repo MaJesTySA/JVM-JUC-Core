@@ -2,6 +2,8 @@
 
 尚硅谷周阳老师课程——[互联网大厂高频重点面试题第2季](https://www.bilibili.com/video/av48961087/)笔记
 
+[TOC]
+
 # JMM
 
 JMM是指Java**内存模型**，不是Java**内存布局**，不是所谓的栈、堆、方法区。
@@ -181,3 +183,56 @@ instance = memory;	 //3.设置引用地址
 
 解决的方法就是对`singletondemo`对象添加上`volatile`关键字，禁止指令重排。
 
+## CAS
+
+CAS是指**Compare And Swap**，**比较并交换**，是一种很重要的同步思想。如果主内存的值跟期望值一样，那么就进行修改，否则一直重试，直到一致为止。
+
+```java
+public class CASDemo {
+    public static void main(String[] args) {
+        AtomicInteger atomicInteger=new AtomicInteger(5);
+        System.out.println(atomicInteger.compareAndSet(5, 2019)+"\t current data : "+ atomicInteger.get());
+        //修改失败
+        System.out.println(atomicInteger.compareAndSet(5, 1024)+"\t current data : "+ atomicInteger.get());
+    }
+}
+```
+
+第一次修改，期望值为5，主内存也为5，修改成功，为2019。第二次修改，期望值为5，主内存为2019，修改失败。
+
+查看`AtomicInteger.getAndIncrement()`方法，发现其没有加`synchronized`**也实现了同步**。这是为什么？
+
+### CAS底层原理
+
+`AtomicInteger`内部维护了`volatile int value`和`private  static final Unsafe unsafe`两个比较重要的参数。
+
+```java
+public final int getAndIncrement(){
+    return unsafe.getAndAddInt(this,valueOffset,1);
+}
+```
+
+`AtomicInteger.getAndIncrement()`调用了`Unsafe.getAndAddInt()`方法。`Unsafe`类的大部分方法都是`native`的，用来像C语言一样从底层操作内存。
+
+```java
+public final int getAnddAddInt(Object var1,long var2,int var4){
+    int var5;
+    do{
+        var5 = this.getIntVolatile(var1, var2);
+    } while(!this.compareAndSwapInt(var1, var2, var5, var5 + var4));
+    return var5;
+}
+```
+
+这个方法的var1和var2，就是根据**对象**和**偏移量**得到在**主内存的快照值**var5。然后`compareAndSwap`方法通过var1和var2得到当前**主内存的实际值**。如果这个**实际值**跟**快照值**相等，那么就更新主内存的值为var5+var4。如果不等，那么就一直循环，一直对比，直到实际值和快照值相等为止。
+
+比如有A、B两个线程，一开始都从主内存中拷贝了原值为3，A线程执行到`var5=this.getIntVolatile`，即var5=3。此时A线程挂起，B修改原值为4，B线程执行完毕，由于加了volatile，所以这个修改是立即可见的。A线程被唤醒，执行`this.compareAndSwapInt`方法，发现这个时候主内存的值不等于快照值3，所以继续循环，**重新**从主内存获取。
+
+### CAS缺点
+
+CAS实际上是一种自旋锁，①一直循环，开销比较大。②只能保证一个变量的原子操作，多个变量依然要加锁。③引出了**ABA问题**。
+
+## ABA问题
+
+所谓ABA问题，就是比较并交换的循环，存在一个**时间差**，而这个时间差可能带来意想不到的问题。比如线程T1将值从A改为B，然后又从B改为A。线程T2看到的就是A，但是**却不知道这个A发生了更改**。尽管线程T2 CAS操作成功，但不代表就没有问题。
+有的需求，比如CAS，**只注重头和尾**，只要首尾一致就接受。但是有的需求，还看重过程，中间不能发生任何修改，这就引出了`AtomicReference`原子引用。
