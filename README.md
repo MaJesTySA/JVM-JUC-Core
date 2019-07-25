@@ -236,3 +236,104 @@ CAS实际上是一种自旋锁，①一直循环，开销比较大。②只能�
 
 所谓ABA问题，就是比较并交换的循环，存在一个**时间差**，而这个时间差可能带来意想不到的问题。比如线程T1将值从A改为B，然后又从B改为A。线程T2看到的就是A，但是**却不知道这个A发生了更改**。尽管线程T2 CAS操作成功，但不代表就没有问题。
 有的需求，比如CAS，**只注重头和尾**，只要首尾一致就接受。但是有的需求，还看重过程，中间不能发生任何修改，这就引出了`AtomicReference`原子引用。
+
+## AtomicReference
+
+`AtomicInteger`对整数进行原子操作，如果是一个POJO呢？可以用`AtomicReference`来包装这个POJO，使其操作原子化。
+
+```java
+User user1 = new User("Jack",25);
+User user2 = new User("Lucy",21);
+AtomicReference<User> atomicReference = new AtomicReference<>();
+atomicReference.set(user1);
+System.out.println(atomicReference.compareAndSet(user1,user2)); // true
+System.out.println(atomicReference.compareAndSet(user1,user2)); //false
+```
+
+## AtomicStampedReference和ABA问题的解决
+
+使用`AtomicStampedReference`类可以解决ABA问题。这个类维护了一个“**版本号**”Stamp，在进行CAS操作的时候，不仅要比较当前值，还要比较**版本号**。只有两者都相等，才执行更新操作。
+
+```java
+AtomicStampedReference.compareAndSet(expectedReference,newReference,oldStamp,newStamp);
+```
+
+详见[ABADemo](https://github.com/MaJesTySA/JVM-JUC-Core/blob/master/src/thread/ABADemo.java)。
+
+## 集合类不安全之List
+
+`ArrayList`不是线程安全类，在多线程同时写的情况下，会抛出`java.util.ConcurrentModificationException`异常。
+
+```java
+private static void listNotSafe() {
+	List<String> list=new ArrayList<>();
+    for (int i = 1; i <= 30; i++) {
+		new Thread(() -> {
+            list.add(UUID.randomUUID().toString().substring(0, 8));
+            System.out.println(Thread.currentThread().getName() + "\t" + list);
+        }, String.valueOf(i)).start();
+    }
+}
+```
+
+**解决方法**：①使用`Vector`（`ArrayList`所有方法加`synchronized`，太重）。②使用`Collections.synchronizedList()`转换成线程安全类。③使用`java.concurrent.CopyOnWriteArrayList`（推荐）。
+
+### CopyOnWriteArrayList
+
+这是JUC的类，通过**写时复制**来实现**读写分离**。比如其`add`方法，就是先**复制**一个新数组，长度为原数组长度+1，然后将新数组最后一个元素设为添加的元素。
+
+```java
+public boolean add(E e) {
+	final ReentrantLock lock = this.lock;
+    lock.lock();
+    try {
+        //得到旧数组
+		Object[] elements = getArray();
+        int len = elements.length;
+        //复制新数组
+        Object[] newElements = Arrays.copyOf(elements, len + 1);
+        //设置新元素
+        newElements[len] = e;
+        //设置新数组
+        setArray(newElements);
+        return true;
+    } finally {
+    	lock.unlock();
+    }
+}
+```
+
+## 集合类不安全之Set
+
+跟List类似，`HashSet`和`TreeSet`都不是线程安全的，与之对应的有`CopyOnWriteSet`这个线程安全类。这个类底层维护了一个`CopyOnWriteArrayList`数组。
+
+```java
+private final CopyOnWriteArrayList<E> al;
+public CopyOnWriteArraySet() {
+	al = new CopyOnWriteArrayList<E>();
+}
+```
+
+### HashSet和HashMap
+
+`HashSet`底层是用`HashMap`实现的。既然是用`HashMap`实现的，那`HashMap.put()`需要传**两个参数**，而`HashSet.add()`只**传一个参数**，这是为什么？实际上`HashSet.add()`就是调用的`HashMap.put()`，只不过**Key**被写死了，是一个`private static final Object`对象。
+
+## 集合类不安全之Map
+
+`HashMap`不是线程安全的，`Hashtable`是线程安全的，但是跟`Vector`类似，太重量级。所以也有类似CopyOnWriteMap，只不过叫`ConcurrentHashMap`。
+
+关于集合不安全类请看[ContainerNotSafeDemo](https://github.com/MaJesTySA/JVM-JUC-Core/blob/master/src/thread/ContainerNotSafeDemo.java)。
+
+## Java锁之公平锁/非公平锁
+
+**概念**：所谓**公平锁**，就是多个线程按照**申请锁的顺序**来获取锁，类似排队，先到先得。而**非公平锁**，则是多个线程抢夺锁，会导致**优先级反转**或**饥饿现象**。
+
+**区别**：公平锁在获取锁时先查看此锁维护的**等待队列**，**为空**或者当前线程是等待队列的**队首**，则直接占有锁，否则插入到等待队列，FIFO原则。非公平锁比较粗鲁，上来直接**先尝试占有锁**，失败则采用公平锁方式。非公平锁的优点是**吞吐量**比公平锁更大。
+
+`synchronized`和`juc.ReentrantLock`默认都是**非公平锁**。`ReentrantLock`在构造的时候传入`true`则是**公平锁**。
+
+## Java锁之可重入锁/递归锁
+
+可重入锁又叫递归锁，指的同一个线程在**外层方法**获得锁时，进入**内层方法**会自动获取锁。也就是说，线程可以进入任何一个它已经拥有锁的代码块。就像有了家门的锁，厕所、书房、厨房就为你敞开了一样。可重入锁可以**避免死锁**的问题。
+
+
