@@ -181,7 +181,7 @@ instance = memory;	 //3.设置引用地址
 
 解决的方法就是对`singletondemo`对象添加上`volatile`关键字，禁止指令重排。
 
-## CAS
+# CAS
 
 CAS是指**Compare And Swap**，**比较并交换**，是一种很重要的同步思想。如果主内存的值跟期望值一样，那么就进行修改，否则一直重试，直到一致为止。
 
@@ -200,7 +200,7 @@ public class CASDemo {
 
 查看`AtomicInteger.getAndIncrement()`方法，发现其没有加`synchronized`**也实现了同步**。这是为什么？
 
-### CAS底层原理
+## CAS底层原理
 
 `AtomicInteger`内部维护了`volatile int value`和`private  static final Unsafe unsafe`两个比较重要的参数。
 
@@ -226,16 +226,16 @@ public final int getAnddAddInt(Object var1,long var2,int var4){
 
 比如有A、B两个线程，一开始都从主内存中拷贝了原值为3，A线程执行到`var5=this.getIntVolatile`，即var5=3。此时A线程挂起，B修改原值为4，B线程执行完毕，由于加了volatile，所以这个修改是立即可见的。A线程被唤醒，执行`this.compareAndSwapInt`方法，发现这个时候主内存的值不等于快照值3，所以继续循环，**重新**从主内存获取。
 
-### CAS缺点
+## CAS缺点
 
 CAS实际上是一种自旋锁，①一直循环，开销比较大。②只能保证一个变量的原子操作，多个变量依然要加锁。③引出了**ABA问题**。
 
-## ABA问题
+# ABA问题
 
 所谓ABA问题，就是比较并交换的循环，存在一个**时间差**，而这个时间差可能带来意想不到的问题。比如线程T1将值从A改为B，然后又从B改为A。线程T2看到的就是A，但是**却不知道这个A发生了更改**。尽管线程T2 CAS操作成功，但不代表就没有问题。
 有的需求，比如CAS，**只注重头和尾**，只要首尾一致就接受。但是有的需求，还看重过程，中间不能发生任何修改，这就引出了`AtomicReference`原子引用。
 
-### AtomicReference
+## AtomicReference
 
 `AtomicInteger`对整数进行原子操作，如果是一个POJO呢？可以用`AtomicReference`来包装这个POJO，使其操作原子化。
 
@@ -248,7 +248,7 @@ System.out.println(atomicReference.compareAndSet(user1,user2)); // true
 System.out.println(atomicReference.compareAndSet(user1,user2)); //false
 ```
 
-### AtomicStampedReference和ABA问题的解决
+## AtomicStampedReference和ABA问题的解决
 
 使用`AtomicStampedReference`类可以解决ABA问题。这个类维护了一个“**版本号**”Stamp，在进行CAS操作的时候，不仅要比较当前值，还要比较**版本号**。只有两者都相等，才执行更新操作。
 
@@ -257,6 +257,8 @@ AtomicStampedReference.compareAndSet(expectedReference,newReference,oldStamp,new
 ```
 
 详见[ABADemo](https://github.com/MaJesTySA/JVM-JUC-Core/blob/master/src/thread/ABADemo.java)。
+
+# 集合类不安全问题
 
 ## 集合类不安全之List
 
@@ -322,6 +324,8 @@ public CopyOnWriteArraySet() {
 
 关于集合不安全类请看[ContainerNotSafeDemo](https://github.com/MaJesTySA/JVM-JUC-Core/blob/master/src/thread/ContainerNotSafeDemo.java)。
 
+# Java锁
+
 ## Java锁之公平锁/非公平锁
 
 **概念**：所谓**公平锁**，就是多个线程按照**申请锁的顺序**来获取锁，类似排队，先到先得。而**非公平锁**，则是多个线程抢夺锁，会导致**优先级反转**或**饥饿现象**。
@@ -332,5 +336,96 @@ public CopyOnWriteArraySet() {
 
 ## Java锁之可重入锁/递归锁
 
-可重入锁又叫递归锁，指的同一个线程在**外层方法**获得锁时，进入**内层方法**会自动获取锁。也就是说，线程可以进入任何一个它已经拥有锁的代码块。就像有了家门的锁，厕所、书房、厨房就为你敞开了一样。可重入锁可以**避免死锁**的问题。
+可重入锁又叫递归锁，指的同一个线程在**外层方法**获得锁时，进入**内层方法**会自动获取锁。也就是说，线程可以进入任何一个它已经拥有锁的代码块。比如`get`方法里面有`set`方法，两个方法都有同一把锁，得到了`get`的锁，就自动得到了`set`的锁。
+
+就像有了家门的锁，厕所、书房、厨房就为你敞开了一样。可重入锁可以**避免死锁**的问题。
+
+详见[ReentrantLockDemo](https://github.com/MaJesTySA/JVM-JUC-Core/blob/master/src/thread/ReentrantLockDemo.java)。
+
+### 锁的配对
+
+锁之间要配对，加了几把锁，最后就得解开几把锁，下面的代码编译和运行都没有任何问题。但锁的数量不匹配会导致死循环。
+
+```java
+lock.lock();
+lock.lock();
+try{
+    someAction();
+}finally{
+    lock.unlock();
+}
+```
+
+
+
+## Java锁之自旋锁
+
+所谓自旋锁，就是尝试获取锁的线程不会**立即阻塞**，而是采用**循环的方式去尝试获取**。自己在那儿一直循环获取，就像“**自旋**”一样。这样的好处是减少**线程切换的上下文开销**，缺点是会**消耗CPU**。CAS底层的`getAndAddInt`就是**自旋锁**思想。
+
+```java
+//跟CAS类似，一直循环比较。
+while (!atomicReference.compareAndSet(null, thread)) { }
+```
+
+详见[SpinLockDemo](https://github.com/MaJesTySA/JVM-JUC-Core/blob/master/src/thread/SpinLockDemo.java)。
+
+## Java锁之读写锁/独占/共享锁
+
+**读锁**是**共享的**，**写锁**是**独占的**。`juc.ReentrantLock`和`synchronized`都是**独占锁**，独占锁就是**一个锁**只能被**一个线程**所持有。有的时候，需要**读写分离**，那么就要引入读写锁，即`juc.ReentrantReadWriteLock`。
+
+比如缓存，就需要读写锁来控制。缓存就是一个键值对，以下Demo模拟了缓存的读写操作，读的`get`方法使用了`ReentrantReadWriteLock.ReadLock()`，写的`put`方法使用了`ReentrantReadWriteLock.WriteLock()`。这样避免了写被打断，实现了多个线程同时读。
+
+[ReadWriteLockDemo](https://github.com/MaJesTySA/JVM-JUC-Core/blob/master/src/thread/ReadWriteLockDemo.java)
+
+# CountDownLatch/CyclicBarrier/Semaphore
+
+## CountDownLatch
+
+`CountDownLatch`内部维护了一个**计数器**，只有当**计数器==0**时，某些线程才会停止阻塞，开始执行。
+
+`CountDownLatch.countDown()`来让计数器-1，`CountDownLatch.await()`来阻塞线程。当`count==0`时，阻塞线程自动唤醒。
+
+**案例一班长关门**：main线程是班长，6个线程是学生。只有6个线程运行完毕，都离开教室后，main线程班长才会关教室门。
+
+**案例二秦灭六国**：只有6国都被灭亡后（执行完毕），main线程才会显示“秦国一统天下”。
+
+### 枚举类的使用
+
+在**案例二**中会使用到枚举类，因为灭六国，循环6次，想跟`i`的值来输出什么国，比如1代表楚国，2代表赵国。如果用判断则十分繁杂，而枚举类可以简化操作。
+
+枚举类就像一个**简化的数据库**，枚举类名就像数据库名，枚举的项目就像数据表，枚举的属性就像表的字段。
+
+关于`CountDownLatch`和枚举类的使用，请看[CountDownLatchDemo](https://github.com/MaJesTySA/JVM-JUC-Core/blob/master/src/thread/CountDownLatchDemo.java)。
+
+## CyclicBarrier
+
+`CountDownLatch`是减，而`CyclicBarrier`是加，理解了`CountDownLatch`，`CyclicBarrier`就很容易。比如召集7颗龙珠才能召唤神龙，详见[CyclicBarrierDemo](https://github.com/MaJesTySA/JVM-JUC-Core/blob/master/src/thread/CyclicBarrierDemo.java)。
+
+## Semaphore
+
+`CountDownLatch`和`CyclicBarrier`的问题是**不能复用**。比如`count=3`，那么减到3或者加到3，就不能继续操作了。而`Semaphore`可以解决这个问题，比如6辆车3个停车位，对于`CountDownLatch`和`CyclicBarrier`**只能停3辆车**，而`Semaphore`可以停6辆车，车位空出来后，其它车可以占有，这就涉及到了`Semaphore.accquire()`和`Semaphore.release()`方法。
+
+```java
+Semaphore semaphore=new Semaphore(3);
+for (int i = 1; i <=6 ; i++) {
+	new Thread(()->{
+		try {
+            //占有资源
+			semaphore.acquire();
+			System.out.println(Thread.currentThread().getName()+"\t抢到车位");
+            try{
+                TimeUnit.SECONDS.sleep(3); 
+            }catch (Exception e){
+                e.printStackTrace(); 
+            }
+			System.out.println(Thread.currentThread().getName()+"\t停车3秒后离开车位");
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		} finally {
+            //释放资源
+			semaphore.release();
+		}
+	},String.valueOf(i)).start();
+}
+```
 
