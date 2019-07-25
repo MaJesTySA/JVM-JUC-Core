@@ -2,8 +2,6 @@
 
 尚硅谷周阳老师课程——[互联网大厂高频重点面试题第2季](https://www.bilibili.com/video/av48961087/)笔记
 
-[TOC]
-
 # JMM
 
 JMM是指Java**内存模型**，不是Java**内存布局**，不是所谓的栈、堆、方法区。
@@ -237,7 +235,7 @@ CAS实际上是一种自旋锁，①一直循环，开销比较大。②只能�
 所谓ABA问题，就是比较并交换的循环，存在一个**时间差**，而这个时间差可能带来意想不到的问题。比如线程T1将值从A改为B，然后又从B改为A。线程T2看到的就是A，但是**却不知道这个A发生了更改**。尽管线程T2 CAS操作成功，但不代表就没有问题。
 有的需求，比如CAS，**只注重头和尾**，只要首尾一致就接受。但是有的需求，还看重过程，中间不能发生任何修改，这就引出了`AtomicReference`原子引用。
 
-## AtomicReference
+### AtomicReference
 
 `AtomicInteger`对整数进行原子操作，如果是一个POJO呢？可以用`AtomicReference`来包装这个POJO，使其操作原子化。
 
@@ -250,7 +248,7 @@ System.out.println(atomicReference.compareAndSet(user1,user2)); // true
 System.out.println(atomicReference.compareAndSet(user1,user2)); //false
 ```
 
-## AtomicStampedReference和ABA问题的解决
+### AtomicStampedReference和ABA问题的解决
 
 使用`AtomicStampedReference`类可以解决ABA问题。这个类维护了一个“**版本号**”Stamp，在进行CAS操作的时候，不仅要比较当前值，还要比较**版本号**。只有两者都相等，才执行更新操作。
 
@@ -335,5 +333,4 @@ public CopyOnWriteArraySet() {
 ## Java锁之可重入锁/递归锁
 
 可重入锁又叫递归锁，指的同一个线程在**外层方法**获得锁时，进入**内层方法**会自动获取锁。也就是说，线程可以进入任何一个它已经拥有锁的代码块。就像有了家门的锁，厕所、书房、厨房就为你敞开了一样。可重入锁可以**避免死锁**的问题。
-
 
