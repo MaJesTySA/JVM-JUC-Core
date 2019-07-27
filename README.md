@@ -1,3 +1,51 @@
+- [JUC、JMM核心知识点笔记](#juc、jmm核心知识点笔记)
+- [JMM](#jmm)
+- [volatile关键字](#volatile关键字)
+  - [可见性](#可见性)
+  - [原子性](#原子性)
+  - [有序性](#有序性)
+  - [哪些地方用到过volatile？](#哪些地方用到过volatile？)
+    - [单例模式的安全问题](#单例模式的安全问题)
+- [CAS](#cas)
+  - [CAS底层原理](#cas底层原理)
+  - [CAS缺点](#cas缺点)
+- [ABA问题](#aba问题)
+  - [AtomicReference](#atomicreference)
+  - [AtomicStampedReference和ABA问题的解决](#atomicstampedreference和aba问题的解决)
+- [集合类不安全问题](#集合类不安全问题)
+  - [List](#list)
+    - [CopyOnWriteArrayList](#copyonwritearraylist)
+  - [Set](#set)
+    - [HashSet和HashMap](#hashset和hashmap)
+  - [Map](#map)
+- [Java锁](#java锁)
+  - [公平锁/非公平锁](#公平锁非公平锁)
+  - [可重入锁/递归锁](#可重入锁递归锁)
+    - [锁的配对](#锁的配对)
+  - [自旋锁](#自旋锁)
+  - [读写锁/独占/共享锁](#读写锁独占共享锁)
+  - [Synchronized和Lock的区别](#synchronized和lock的区别)
+- [CountDownLatch/CyclicBarrier/Semaphore](#countdownlatchcyclicbarriersemaphore)
+  - [CountDownLatch](#countdownlatch)
+    - [枚举类的使用](#枚举类的使用)
+  - [CyclicBarrier](#cyclicbarrier)
+  - [Semaphore](#semaphore)
+- [阻塞队列](#阻塞队列)
+  - [SynchronousQueue](#synchronousqueue)
+- [Callable接口](#callable接口)
+- [阻塞队列的应用——生产者消费者](#阻塞队列的应用生产者消费者)
+  - [传统模式](#传统模式)
+  - [阻塞队列模式](#阻塞队列模式)
+- [阻塞队列的应用——线程池](#阻塞队列的应用线程池)
+  - [线程池基本概念](#线程池基本概念)
+  - [线程池三种常用创建方式](#线程池三种常用创建方式)
+  - [线程池创建的七个参数](#线程池创建的七个参数)
+  - [线程池底层原理](#线程池底层原理)
+  - [线程池的拒绝策略](#线程池的拒绝策略)
+  - [实际生产使用哪一个线程池？](#实际生产使用哪一个线程池？)
+    - [自定义线程池参数选择](#自定义线程池参数选择)
+- [死锁编码和定位](#死锁编码和定位)
+
 # JUC、JMM核心知识点笔记
 
 尚硅谷周阳老师课程——[互联网大厂高频重点面试题第2季](https://www.bilibili.com/video/av48961087/)笔记
@@ -14,7 +62,7 @@ JMM可能带来**可见性**、**原子性**和**有序性**问题。所谓可�
 
 # volatile关键字
 
-volatile关键字是Java提供的一种**轻量级**同步机制。它能够保证**可见性**和**有序性**，但是不能保证**原子性**。
+`volatile`关键字是Java提供的一种**轻量级**同步机制。它能够保证**可见性**和**有序性**，但是不能保证**原子性**。
 
 ## 可见性
 
@@ -57,7 +105,7 @@ private static void volatileVisibilityDemo() {
     }
 ```
 
-MyData类是资源类，一开始number变量没有用volatile修饰，所以程序运行的结果是：
+`MyData`类是资源类，一开始number变量没有用volatile修饰，所以程序运行的结果是：
 
 ```java
 可见性测试
@@ -88,9 +136,12 @@ iadd		//加操作
 putfield	//写操作
 ```
 
-假设有3个线程，分别执行number++，都先从主内存中拿到最开始的值，number=0，然后三个线程分别进行操作。假设线程0执行完毕，number=1，也立刻通知到了其它线程，但是此时线程1、2已经拿到了number=0，所以结果就是写覆盖。
+假设有3个线程，分别执行number++，都先从主内存中拿到最开始的值，number=0，然后三个线程分别进行操作。假设线程0执行完毕，number=1，也立刻通知到了其它线程，但是此时线程1、2已经拿到了number=0，所以结果就是写覆盖，线程1、2将number变成1。
 
-解决的方式就是：①对addPlusPlus()方法加锁。②使用j.u.c.AtomicInteger类。
+解决的方式就是：
+
+1. 对`addPlusPlus()`方法加锁。
+2. 使用`java.util.concurrent.AtomicInteger`类。
 
 ```java
 private static void atomicDemo() {
@@ -112,7 +163,7 @@ private static void atomicDemo() {
     }
 ```
 
-结果：可见，由于volatile不能保证原子性，出现了线程重复写的问题，最终结果比20000小。
+结果：可见，由于`volatile`不能保证原子性，出现了线程重复写的问题，最终结果比20000小。而`AtomicInteger`可以保证原子性。
 
 ```java
 原子性测试
@@ -135,9 +186,11 @@ y = x * x;  //语句4
 
 以上例子，可能出现的执行顺序有1234、2134、1342，这三个都没有问题，最终结果都是x = 16，y=256。但是如果是4开头，就有问题了，y=0。这个时候就**不需要**指令重排序。
 
-volatile底层是用CPU的**内存屏障（Memory Barrier）指令**来实现的，有两个作用，一个是保证特定操作的顺序性，二是保证变量的可见性。在指令之间插入一条Memory Barrier指令，告诉编译器和CPU，在Memory Barrier指令之间的指令不能被重排序。
+volatile底层是用CPU的**内存屏障（Memory Barrier）**指令来实现的，有两个作用，一个是保证特定操作的顺序性，二是保证变量的可见性。在指令之间插入一条Memory Barrier指令，告诉编译器和CPU，在Memory Barrier指令之间的指令不能被重排序。
 
-# 单例模式的安全问题
+## 哪些地方用到过volatile？
+
+### 单例模式的安全问题
 
 常见的DCL（Double Check Lock）模式虽然加了同步，但是在多线程下依然会有线程安全问题。
 
@@ -222,13 +275,17 @@ public final int getAnddAddInt(Object var1,long var2,int var4){
 }
 ```
 
-这个方法的var1和var2，就是根据**对象**和**偏移量**得到在**主内存的快照值**var5。然后`compareAndSwap`方法通过var1和var2得到当前**主内存的实际值**。如果这个**实际值**跟**快照值**相等，那么就更新主内存的值为var5+var4。如果不等，那么就一直循环，一直对比，直到实际值和快照值相等为止。
+这个方法的var1和var2，就是根据**对象**和**偏移量**得到在**主内存的快照值**var5。然后`compareAndSwap`方法通过var1和var2得到当前**主内存的实际值**。如果这个**实际值**跟**快照值**相等，那么就更新主内存的值为var5+var4。如果不等，那么就一直循环，一直获取快照，一直对比，直到实际值和快照值相等为止。
 
-比如有A、B两个线程，一开始都从主内存中拷贝了原值为3，A线程执行到`var5=this.getIntVolatile`，即var5=3。此时A线程挂起，B修改原值为4，B线程执行完毕，由于加了volatile，所以这个修改是立即可见的。A线程被唤醒，执行`this.compareAndSwapInt`方法，发现这个时候主内存的值不等于快照值3，所以继续循环，**重新**从主内存获取。
+比如有A、B两个线程，一开始都从主内存中拷贝了原值为3，A线程执行到`var5=this.getIntVolatile`，即var5=3。此时A线程挂起，B修改原值为4，B线程执行完毕，由于加了volatile，所以这个修改是立即可见的。A线程被唤醒，执行`this.compareAndSwapInt()`方法，发现这个时候主内存的值不等于快照值3，所以继续循环，**重新**从主内存获取。
 
 ## CAS缺点
 
-CAS实际上是一种自旋锁，①一直循环，开销比较大。②只能保证一个变量的原子操作，多个变量依然要加锁。③引出了**ABA问题**。
+CAS实际上是一种自旋锁，
+
+1. 一直循环，开销比较大。
+2. 只能保证一个变量的原子操作，多个变量依然要加锁。
+3. 引出了**ABA问题**。
 
 # ABA问题
 
@@ -276,11 +333,15 @@ private static void listNotSafe() {
 }
 ```
 
-**解决方法**：①使用`Vector`（`ArrayList`所有方法加`synchronized`，太重）。②使用`Collections.synchronizedList()`转换成线程安全类。③使用`java.concurrent.CopyOnWriteArrayList`（推荐）。
+**解决方法**：
+
+1. 使用`Vector`（`ArrayList`所有方法加`synchronized`，太重）。
+2. 使用`Collections.synchronizedList()`转换成线程安全类。
+3. 使用`java.concurrent.CopyOnWriteArrayList`（推荐）。
 
 ### CopyOnWriteArrayList
 
-这是JUC的类，通过**写时复制**来实现**读写分离**。比如其`add`方法，就是先**复制**一个新数组，长度为原数组长度+1，然后将新数组最后一个元素设为添加的元素。
+这是JUC的类，通过**写时复制**来实现**读写分离**。比如其`add()`方法，就是先**复制**一个新数组，长度为原数组长度+1，然后将新数组最后一个元素设为添加的元素。
 
 ```java
 public boolean add(E e) {
@@ -639,3 +700,55 @@ public static ExecutorService newCachedThreadPool() {
 当一个线程无事可做一段时间`keepAliveTime`后，如果正在运行的线程数大于`corePoolSize`，则关闭非核心线程。
 
 ## 线程池的拒绝策略
+
+当等待队列满时，且达到最大线程数，再有新任务到来，就需要启动拒绝策略。JDK提供了四种拒绝策略，分别是。
+
+1. **AbortPolicy**：默认的策略，直接抛出`RejectedExecutionException`异常，阻止系统正常运行。
+2. **CallerRunsPolicy**：既不会抛出异常，也不会终止任务，而是将任务返回给调用者。
+3. **DiscardOldestPolicy**：抛弃队列中等待最久的任务，然后把当前任务加入队列中尝试再次提交任务。
+4. **DiscardPolicy**：直接丢弃任务，不做任何处理。
+
+## 实际生产使用哪一个线程池？
+
+**单一、可变、定长都不用**！原因就是`FixedThreadPool`和`SingleThreadExecutor`底层都是用`LinkedBlockingQueue`实现的，这个队列最大长度为`Integer.MAX_VALUE`，显然会导致OOM。所以实际生产一般自己通过`ThreadPoolExecutor`的7个参数，自定义线程池。
+
+```java
+ExecutorService threadPool=new ThreadPoolExecutor(2,5,
+                        1L,TimeUnit.SECONDS,
+                        new LinkedBlockingQueue<>(3),
+                        Executors.defaultThreadFactory(),
+                        new ThreadPoolExecutor.AbortPolicy());
+```
+
+### 自定义线程池参数选择
+
+对于CPU密集型任务，最大线程数是CPU线程数+1。对于IO密集型任务，尽量多配点，可以是CPU线程数*2，或者CPU线程数/(1-阻塞系数)。
+
+# 死锁编码和定位
+
+主要是两个命令配合起来使用，定位死锁。
+
+**jps**指令：`jps -l`可以查看运行的Java进程。
+
+```java
+9688 thread.DeadLockDemo
+12177 sun.tools.jps.Jps
+```
+
+**jstack**指令：`jstack pid`可以查看某个Java进程的堆栈信息，同时分析出死锁。
+
+```java
+=====================
+"Thread AAA":
+	at xxxxx
+	- waiting to lock <0x000111>
+	- locked <0x000222>
+	at java.lang.Thread.run
+"Thread BBB":
+	at xxxxx
+	- waiting to lock <0x000222>
+	- locked <0x000111>
+	at java.lang.Thread.run
+Found 1 deadlock.
+```
+
