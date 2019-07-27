@@ -260,7 +260,7 @@ AtomicStampedReference.compareAndSet(expectedReference,newReference,oldStamp,new
 
 # 集合类不安全问题
 
-## 集合类不安全之List
+## List
 
 `ArrayList`不是线程安全类，在多线程同时写的情况下，会抛出`java.util.ConcurrentModificationException`异常。
 
@@ -303,7 +303,7 @@ public boolean add(E e) {
 }
 ```
 
-## 集合类不安全之Set
+## Set
 
 跟List类似，`HashSet`和`TreeSet`都不是线程安全的，与之对应的有`CopyOnWriteSet`这个线程安全类。这个类底层维护了一个`CopyOnWriteArrayList`数组。
 
@@ -318,7 +318,7 @@ public CopyOnWriteArraySet() {
 
 `HashSet`底层是用`HashMap`实现的。既然是用`HashMap`实现的，那`HashMap.put()`需要传**两个参数**，而`HashSet.add()`只**传一个参数**，这是为什么？实际上`HashSet.add()`就是调用的`HashMap.put()`，只不过**Key**被写死了，是一个`private static final Object`对象。
 
-## 集合类不安全之Map
+## Map
 
 `HashMap`不是线程安全的，`Hashtable`是线程安全的，但是跟`Vector`类似，太重量级。所以也有类似CopyOnWriteMap，只不过叫`ConcurrentHashMap`。
 
@@ -326,7 +326,7 @@ public CopyOnWriteArraySet() {
 
 # Java锁
 
-## Java锁之公平锁/非公平锁
+## 公平锁/非公平锁
 
 **概念**：所谓**公平锁**，就是多个线程按照**申请锁的顺序**来获取锁，类似排队，先到先得。而**非公平锁**，则是多个线程抢夺锁，会导致**优先级反转**或**饥饿现象**。
 
@@ -334,7 +334,7 @@ public CopyOnWriteArraySet() {
 
 `synchronized`和`juc.ReentrantLock`默认都是**非公平锁**。`ReentrantLock`在构造的时候传入`true`则是**公平锁**。
 
-## Java锁之可重入锁/递归锁
+## 可重入锁/递归锁
 
 可重入锁又叫递归锁，指的同一个线程在**外层方法**获得锁时，进入**内层方法**会自动获取锁。也就是说，线程可以进入任何一个它已经拥有锁的代码块。比如`get`方法里面有`set`方法，两个方法都有同一把锁，得到了`get`的锁，就自动得到了`set`的锁。
 
@@ -356,9 +356,7 @@ try{
 }
 ```
 
-
-
-## Java锁之自旋锁
+## 自旋锁
 
 所谓自旋锁，就是尝试获取锁的线程不会**立即阻塞**，而是采用**循环的方式去尝试获取**。自己在那儿一直循环获取，就像“**自旋**”一样。这样的好处是减少**线程切换的上下文开销**，缺点是会**消耗CPU**。CAS底层的`getAndAddInt`就是**自旋锁**思想。
 
@@ -369,7 +367,7 @@ while (!atomicReference.compareAndSet(null, thread)) { }
 
 详见[SpinLockDemo](https://github.com/MaJesTySA/JVM-JUC-Core/blob/master/src/thread/SpinLockDemo.java)。
 
-## Java锁之读写锁/独占/共享锁
+## 读写锁/独占/共享锁
 
 **读锁**是**共享的**，**写锁**是**独占的**。`juc.ReentrantLock`和`synchronized`都是**独占锁**，独占锁就是**一个锁**只能被**一个线程**所持有。有的时候，需要**读写分离**，那么就要引入读写锁，即`juc.ReentrantReadWriteLock`。
 
@@ -377,13 +375,23 @@ while (!atomicReference.compareAndSet(null, thread)) { }
 
 [ReadWriteLockDemo](https://github.com/MaJesTySA/JVM-JUC-Core/blob/master/src/thread/ReadWriteLockDemo.java)
 
+## Synchronized和Lock的区别
+
+`synchronized`关键字和`java.util.concurrent.locks.Lock`都能加锁，两者有什么区别呢？
+
+1. **原始构成**：`sync`是JVM层面的，底层通过`monitorenter`和`monitorexit`来实现的。`Lock`是JDK API层面的。（`sync`一个enter会有两个exit，一个是正常退出，一个是异常退出）
+2. **使用方法**：`sync`不需要手动释放锁，而`Lock`需要手动释放。
+3. **是否可中断**：`sync`不可中断，除非抛出异常或者正常运行完成。`Lock`是可中断的，通过调用`interrupt()`方法。
+4. **是否为公平锁**：`sync`只能是非公平锁，而`Lock`既能是公平锁，又能是非公平锁。
+5. **绑定多个条件**：`sync`不能，只能随机唤醒。而`Lock`可以通过`Condition`来绑定多个条件，精确唤醒。
+
 # CountDownLatch/CyclicBarrier/Semaphore
 
 ## CountDownLatch
 
 `CountDownLatch`内部维护了一个**计数器**，只有当**计数器==0**时，某些线程才会停止阻塞，开始执行。
 
-`CountDownLatch.countDown()`来让计数器-1，`CountDownLatch.await()`来阻塞线程。当`count==0`时，阻塞线程自动唤醒。
+`CountDownLatch`主要有两个方法，`countDown()`来让计数器-1，`await()`来让线程阻塞。当`count==0`时，阻塞线程自动唤醒。
 
 **案例一班长关门**：main线程是班长，6个线程是学生。只有6个线程运行完毕，都离开教室后，main线程班长才会关教室门。
 
@@ -391,7 +399,7 @@ while (!atomicReference.compareAndSet(null, thread)) { }
 
 ### 枚举类的使用
 
-在**案例二**中会使用到枚举类，因为灭六国，循环6次，想跟`i`的值来输出什么国，比如1代表楚国，2代表赵国。如果用判断则十分繁杂，而枚举类可以简化操作。
+在**案例二**中会使用到枚举类，因为灭六国，循环6次，想根据`i`的值来确定输出什么国，比如1代表楚国，2代表赵国。如果用判断则十分繁杂，而枚举类可以简化操作。
 
 枚举类就像一个**简化的数据库**，枚举类名就像数据库名，枚举的项目就像数据表，枚举的属性就像表的字段。
 
@@ -429,3 +437,205 @@ for (int i = 1; i <=6 ; i++) {
 }
 ```
 
+# 阻塞队列
+
+**概念**：当阻塞队列为空时，获取（take）操作是阻塞的；当阻塞队列为满时，添加（put）操作是阻塞的。
+
+![](https://raw.githubusercontent.com/MaJesTySA/JVM-JUC-Core/master/imgs/BlockingQueue.png)
+
+**好处**：阻塞队列不用手动控制什么时候该被阻塞，什么时候该被唤醒，简化了操作。
+
+**体系**：`Collection`→`Queue`→`BlockingQueue`→七个阻塞队列实现类。
+
+| 类名                    | 作用                             |
+| ----------------------- | -------------------------------- |
+| **ArrayBlockingQueue**  | 由**数组**构成的**有界**阻塞队列 |
+| **LinkedBlockingQueue** | 由**链表**构成的**有界**阻塞队列 |
+| PriorityBlockingQueue   | 支持优先级排序的无界阻塞队列     |
+| DelayQueue              | 支持优先级的延迟无界阻塞队列     |
+| **SynchronousQueue**    | 单个元素的阻塞队列               |
+| LinkedTransferQueue     | 由链表构成的无界阻塞队列         |
+| LinkedBlockingDeque     | 由链表构成的双向阻塞队列         |
+
+粗体标记的三个用得比较多，许多消息中间件底层就是用它们实现的。
+
+需要注意的是`LinkedBlockingQueue`虽然是有界的，但有个巨坑，其默认大小是`Integer.MAX_VALUE`，高达21亿，一般情况下内存早爆了（在线程池的`ThreadPoolExecutor`有体现）。
+
+**API**：抛出异常是指当队列满时，再次插入会抛出异常；返回布尔是指当队列满时，再次插入会返回false；阻塞是指当队列满时，再次插入会被阻塞，直到队列取出一个元素，才能插入。超时是指当一个时限过后，才会插入或者取出。API使用见[BlockingQueueDemo](https://github.com/MaJesTySA/JVM-JUC-Core/blob/master/src/thread/BlockingQueueDemo.java)。
+
+| 方法类型 | 抛出异常  | 返回布尔   | 阻塞     | 超时                     |
+| -------- | --------- | ---------- | -------- | ------------------------ |
+| 插入     | add(E e)  | offer(E e) | put(E e) | offer(E e,Time,TimeUnit) |
+| 取出     | remove()  | poll()     | take()   | poll(Time,TimeUnit)      |
+| 队首     | element() | peek()     | 无       | 无                       |
+
+## SynchronousQueue
+
+队列只有一个元素，如果想插入多个，必须等队列元素取出后，才能插入，只能有一个“坑位”，用一个插一个，详见[SynchronousQueueDemo](https://github.com/MaJesTySA/JVM-JUC-Core/blob/master/src/thread/SynchronousQueueDemo.java)。
+
+# Callable接口
+
+**与Runnable的区别**：
+
+1. Callable带返回值。
+2. 会抛出异常。
+3. 覆写`call()`方法，而不是`run()`方法。
+
+**Callable接口的使用**：
+
+```java
+public class CallableDemo {
+//实现Callable接口
+class MyThread implements Callable<Integer> {
+    @Override
+    public Integer call() throws Exception {
+        System.out.println("callable come in ...");
+        return 1024;
+    }
+}
+    
+    public static void main(String[] args) throws ExecutionException, InterruptedException {
+    	//创建FutureTask类，接受MyThread。    
+        FutureTask<Integer> futureTask = new FutureTask<>(new MyThread());
+        //将FutureTask对象放到Thread类的构造器里面。
+        new Thread(futureTask, "AA").start();
+        int result01 = 100;
+        //用FutureTask的get方法得到返回值。
+        int result02 = futureTask.get();
+        System.out.println("result=" + (result01 + result02));
+    }
+}
+```
+
+# 阻塞队列的应用——生产者消费者
+
+## 传统模式
+
+传统模式使用`Lock`来进行操作，需要手动加锁、解锁。详见[ProdConsTradiDemo](https://github.com/MaJesTySA/JVM-JUC-Core/blob/master/src/thread/ProdConsTradiDemo.java)。
+
+```java
+public void increment() throws InterruptedException {
+	lock.lock();
+	try {
+		//1 判断 如果number=1，那么就等待，停止生产
+		while (number != 0) {
+        //等待，不能生产
+        condition.await();
+    	}
+	//2 干活 否则，进行生产
+	number++;
+    System.out.println(Thread.currentThread().getName() + "\t" + number);
+	//3 通知唤醒 然后唤醒消费线程
+	condition.signalAll();
+    } catch (Exception e) {
+		e.printStackTrace();
+	} finally {
+        //最后解锁
+		lock.unlock();
+	}
+}
+```
+
+## 阻塞队列模式
+
+使用阻塞队列就不需要手动加锁了，详见[ProdConsBlockQueueDemo](https://github.com/MaJesTySA/JVM-JUC-Core/blob/master/src/thread/ProdConsBlockQueueDemo.java)。
+
+```java
+public void myProd() throws Exception {
+	String data = null;
+	boolean retValue;
+	while (FLAG) {
+		data = atomicInteger.incrementAndGet() + "";//++i
+		retValue = blockingQueue.offer(data, 2L, TimeUnit.SECONDS);
+        if (retValue) {
+			System.out.println(Thread.currentThread().getName() + "\t" + "插入队列" + data + "成功");
+		} else {
+			System.out.println(Thread.currentThread().getName() + "\t" + "插入队列" + data + "失败");
+		}
+        TimeUnit.SECONDS.sleep(1);
+	}
+System.out.println(Thread.currentThread().getName() + "\tFLAG==false，停止生产");
+}
+```
+
+# 阻塞队列的应用——线程池
+
+## 线程池基本概念
+
+**概念**：线程池主要是控制运行线程的数量，将待处理任务放到等待队列，然后创建线程执行这些任务。如果超过了最大线程数，则等待。
+
+**优点**：
+
+1. 线程复用：不用一直new新线程，重复利用已经创建的线程来降低线程的创建和销毁开销，节省系统资源。
+2. 提高响应速度：当任务达到时，不用创建新的线程，直接利用线程池的线程。
+3. 管理线程：可以控制最大并发数，控制线程的创建等。
+
+**体系**：`Executor`→`ExecutorService`→`AbstractExecutorService`→`ThreadPoolExecutor`。`ThreadPoolExecutor`是线程池创建的核心类。类似`Arrays`、`Collections`工具类，`Executor`也有自己的工具类`Executors`。
+
+## 线程池三种常用创建方式
+
+**newFixedThreadPool**：使用`LinkedBlockingQueue`实现，定长线程池。
+
+```java
+public static ExecutorService newFixedThreadPool(int nThreads) {
+	return new ThreadPoolExecutor(nThreads, nThreads,
+                                  0L, TimeUnit.MILLISECONDS,
+                                  new LinkedBlockingQueue<Runnable>());
+}
+```
+
+**newSingleThreadExecutor**：使用`LinkedBlockingQueue`实现，一池只有一个线程。
+
+```java
+public static ExecutorService newSingleThreadExecutor() {
+	return new FinalizableDelegatedExecutorService(new ThreadPoolExecutor(1, 1,
+                                    0L, TimeUnit.MILLISECONDS,
+                                    new LinkedBlockingQueue<Runnable>()));
+}
+```
+
+**newCachedThreadPool**：使用`SynchronousQueue`实现，变长线程池。
+
+```java
+public static ExecutorService newCachedThreadPool() {
+	return new ThreadPoolExecutor(0, Integer.MAX_VALUE,
+                                 60L, TimeUnit.SECONDS,
+                                 new SynchronousQueue<Runnable>());
+}
+```
+
+## 线程池创建的七个参数
+
+| 参数            | 意义                       |
+| --------------- | -------------------------- |
+| corePoolSize    | 线程池常驻核心线程数       |
+| maximumPoolSize | 能够容纳的最大线程数       |
+| keepAliveTime   | 空闲线程存活时间           |
+| unit            | 存活时间单位               |
+| workQueue       | 存放提交但未执行任务的队列 |
+| threadFactory   | 创建线程的工厂类           |
+| handler         | 等待队列满后的拒绝策略     |
+
+**理解**：线程池的创建参数，就像一个**银行**。
+
+`corePoolSize`就像银行的“**当值窗口**“，比如今天有**2位柜员**在受理**客户请求**（任务）。如果超过2个客户，那么新的客户就会在**等候区**（等待队列`workQueue`）等待。当**等候区**也满了，这个时候就要开启“**加班窗口**”，让其它3位柜员来加班，此时达到**最大窗口**`maximumPoolSize`，为5个。如果开启了所有窗口，等候区依然满员，此时就应该启动”**拒绝策略**“`handler`，告诉不断涌入的客户，叫他们不要进入，已经爆满了。由于不再涌入新客户，办完事的客户增多，窗口开始空闲，这个时候就通过`keepAlivetTime`将多余的3个”加班窗口“取消，恢复到2个”当值窗口“。
+
+## 线程池底层原理
+
+**原理图**：上面银行的例子，实际上就是线程池的工作原理。
+
+![](https://raw.githubusercontent.com/MaJesTySA/JVM-JUC-Core/master/imgs/threadPool.png)
+
+**流程图**：
+
+![](https://raw.githubusercontent.com/MaJesTySA/JVM-JUC-Core/master/imgs/threadPoolProcedure.png)
+
+新任务到达→
+
+如果正在运行的线程数小于`corePoolSize`，创建核心线程；大于等于`corePoolSize`，放入等待队列。
+
+如果等待队列已满，但正在运行的线程数小于`maximumPoolSize`，创建非核心线程；大于等于`maximumPoolSize`，启动拒绝策略。
+
+当一个线程无事可做一段时间`keepAliveTime`后，如果正在运行的线程数大于`corePoolSize`，则关闭非核心线程。
+
+## 线程池的拒绝策略
