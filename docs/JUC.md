@@ -1,5 +1,4 @@
 # JUC核心知识点
-- [JUC、JMM核心知识点笔记](#juc、jmm核心知识点笔记)
 - [JMM](#jmm)
 - [volatile关键字](#volatile关键字)
   - [可见性](#可见性)
