@@ -2,7 +2,7 @@
 
 尚硅谷周阳老师课程——[互联网大厂高频重点面试题第2季](https://www.bilibili.com/video/av48961087/)笔记。
 
-#JUC部分
+# JUC 部分
 
 [JUC](https://github.com/MaJesTySA/JVM-JUC-Core/blob/master/docs/JUC.md)
 
@@ -52,3 +52,6 @@
   - 实际生产使用哪一个线程池？
     - 自定义线程池参数选择
 - 死锁编码和定位
+
+# JVM 部分
+[JVM](https://github.com/MaJesTySA/JVM-JUC-Core/blob/master/docs/JVM.md)
