@@ -3,9 +3,7 @@
 尚硅谷周阳老师课程——[互联网大厂高频重点面试题第2季](https://www.bilibili.com/video/av48961087/)笔记。
 
 
-[JUC](https://github.com/MaJesTySA/JVM-JUC-Core/blob/master/docs/JUC.md)
-
-[JVM](https://github.com/MaJesTySA/JVM-JUC-Core/blob/master/docs/JVM.md)
+[JUC笔记](https://github.com/MaJesTySA/JVM-JUC-Core/blob/master/docs/JUC.md) / [JVM笔记](https://github.com/MaJesTySA/JVM-JUC-Core/blob/master/docs/JVM.md)
 
 ![脑图](https://raw.githubusercontent.com/MaJesTySA/JVM-JUC-Core/master/imgs/mindmap.png)
 
