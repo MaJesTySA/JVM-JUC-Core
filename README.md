@@ -2,9 +2,12 @@
 
 尚硅谷周阳老师课程——[互联网大厂高频重点面试题第2季](https://www.bilibili.com/video/av48961087/)笔记。
 
-# JUC 部分
 
 [JUC](https://github.com/MaJesTySA/JVM-JUC-Core/blob/master/docs/JUC.md)
+
+[JVM](https://github.com/MaJesTySA/JVM-JUC-Core/blob/master/docs/JVM.md)
+
+# JUC知识点
 
 - JMM
 - volatile关键字
@@ -53,9 +56,7 @@
     - 自定义线程池参数选择
 - 死锁编码和定位
 
-# JVM 部分
-
-[JVM](https://github.com/MaJesTySA/JVM-JUC-Core/blob/master/docs/JVM.md)
+# JVM知识点
 
 - [Java8  JVM内存结构]
 - [GC Roots]
