@@ -7,6 +7,8 @@
 
 [JVM](https://github.com/MaJesTySA/JVM-JUC-Core/blob/master/docs/JVM.md)
 
+![脑图](https://raw.githubusercontent.com/MaJesTySA/JVM-JUC-Core/master/imgs/mindmap.png)
+
 # JUC知识点
 
 - JMM
