@@ -504,7 +504,7 @@ procs -----------memory---------- ---swap-- -----io---- -system-- ------cpu-----
 
 ## jps
 
-Java版的`ps -ef 查看所有JVM进程。
+Java版的`ps -ef`查看所有JVM进程。
 
 ## jstack
 
