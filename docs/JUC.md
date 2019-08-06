@@ -468,7 +468,7 @@ while (!atomicReference.compareAndSet(null, thread)) { }
 
 ## Semaphore
 
-`CountDownLatch`和`CyclicBarrier`的问题是**不能复用**。比如`count=3`，那么减到3或者加到3，就不能继续操作了。而`Semaphore`可以解决这个问题，比如6辆车3个停车位，对于`CountDownLatch`和`CyclicBarrier`**只能停3辆车**，而`Semaphore`可以停6辆车，车位空出来后，其它车可以占有，这就涉及到了`Semaphore.accquire()`和`Semaphore.release()`方法。
+`CountDownLatch`和的问题是**不能复用**。比如`count=3`，那么加到3，就不能继续操作了。而`Semaphore`可以解决这个问题，比如6辆车3个停车位，对于`CountDownLatch`**只能停3辆车**，而`Semaphore`可以停6辆车，车位空出来后，其它车可以占有，这就涉及到了`Semaphore.accquire()`和`Semaphore.release()`方法。
 
 ```java
 Semaphore semaphore=new Semaphore(3);
