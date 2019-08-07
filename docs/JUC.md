@@ -198,11 +198,11 @@ public class SingletonDemo {
     }
     //DCL模式 Double Check Lock 双端检索机制：在加锁前后都进行判断
     public static SingletonDemo getInstance(){
-		if (singletonDemo==null){
+        if (singletonDemo==null){
             synchronized (SingletonDemo.class){
-                if (singletonDemo==null){
-                    singletonDemo=new SingletonDemo();
-                }
+                 if (singletonDemo==null){
+                     singletonDemo=new SingletonDemo();
+                 }
             }
         }
         return singletonDemo;
