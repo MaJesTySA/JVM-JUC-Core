@@ -86,19 +86,19 @@ class MyData{
 
 //volatile可以保证可见性，及时通知其它线程主物理内存的值已被修改
 private static void volatileVisibilityDemo() {
-	System.out.println("可见性测试");
-	MyData myData=new MyData();//资源类
-	//启动一个线程操作共享数据
-	new Thread(()->{
-		System.out.println(Thread.currentThread().getName()+"\t come in");
-	try {TimeUnit.SECONDS.sleep(3);myData.setTo60();
-         System.out.println(Thread.currentThread().getName()+"\t update number value: "+myData.number);}catch (InterruptedException e){e.printStackTrace();}
-	},"AAA").start();
-	while (myData.number==0){
- 	//main线程持有共享数据的拷贝，一直为0
-	}
-	System.out.println(Thread.currentThread().getName()+"\t mission is over. main get number value: "+myData.number);
+    System.out.println("可见性测试");
+    MyData myData=new MyData();//资源类
+    //启动一个线程操作共享数据
+    new Thread(()->{
+        System.out.println(Thread.currentThread().getName()+"\t come in");
+        try {TimeUnit.SECONDS.sleep(3);myData.setTo60();
+        System.out.println(Thread.currentThread().getName()+"\t update number value: "+myData.number);}catch (InterruptedException e){e.printStackTrace();}
+    },"AAA").start();
+    while (myData.number==0){
+     //main线程持有共享数据的拷贝，一直为0
     }
+    System.out.println(Thread.currentThread().getName()+"\t mission is over. main get number value: "+myData.number);
+}
 ```
 
 `MyData`类是资源类，一开始number变量没有用volatile修饰，所以程序运行的结果是：
@@ -141,13 +141,13 @@ putfield	//写操作
 
 ```java
 private static void atomicDemo() {
-	System.out.println("原子性测试");
-	MyData myData=new MyData();
-	for (int i = 1; i <= 20; i++) {
-		new Thread(()->{
-			for (int j = 0; j <1000 ; j++) {
-				myData.addPlusPlus();
-				myData.addAtomic();
+    System.out.println("原子性测试");
+    MyData myData=new MyData();
+    for (int i = 1; i <= 20; i++) {
+        new Thread(()->{
+            for (int j = 0; j <1000 ; j++) {
+                myData.addPlusPlus();
+                myData.addAtomic();
             }
         },String.valueOf(i)).start();
     }
@@ -156,7 +156,7 @@ private static void atomicDemo() {
     }
     System.out.println(Thread.currentThread().getName()+"\t int type finally number value: "+myData.number);
     System.out.println(Thread.currentThread().getName()+"\t AtomicInteger type finally number value: "+myData.atomicInteger);
-    }
+}
 ```
 
 结果：可见，由于`volatile`不能保证原子性，出现了线程重复写的问题，最终结果比20000小。而`AtomicInteger`可以保证原子性。
@@ -319,9 +319,9 @@ AtomicStampedReference.compareAndSet(expectedReference,newReference,oldStamp,new
 
 ```java
 private static void listNotSafe() {
-	List<String> list=new ArrayList<>();
+    List<String> list=new ArrayList<>();
     for (int i = 1; i <= 30; i++) {
-		new Thread(() -> {
+        new Thread(() -> {
             list.add(UUID.randomUUID().toString().substring(0, 8));
             System.out.println(Thread.currentThread().getName() + "\t" + list);
         }, String.valueOf(i)).start();
@@ -341,11 +341,11 @@ private static void listNotSafe() {
 
 ```java
 public boolean add(E e) {
-	final ReentrantLock lock = this.lock;
+    final ReentrantLock lock = this.lock;
     lock.lock();
     try {
         //得到旧数组
-		Object[] elements = getArray();
+        Object[] elements = getArray();
         int len = elements.length;
         //复制新数组
         Object[] newElements = Arrays.copyOf(elements, len + 1);
@@ -355,7 +355,7 @@ public boolean add(E e) {
         setArray(newElements);
         return true;
     } finally {
-    	lock.unlock();
+        lock.unlock();
     }
 }
 ```
@@ -367,7 +367,7 @@ public boolean add(E e) {
 ```java
 private final CopyOnWriteArrayList<E> al;
 public CopyOnWriteArraySet() {
-	al = new CopyOnWriteArrayList<E>();
+    al = new CopyOnWriteArrayList<E>();
 }
 ```
 
@@ -473,24 +473,18 @@ while (!atomicReference.compareAndSet(null, thread)) { }
 ```java
 Semaphore semaphore=new Semaphore(3);
 for (int i = 1; i <=6 ; i++) {
-	new Thread(()->{
-		try {
+    new Thread(()->{
+        try {
             //占有资源
-			semaphore.acquire();
-			System.out.println(Thread.currentThread().getName()+"\t抢到车位");
-            try{
-                TimeUnit.SECONDS.sleep(3); 
-            }catch (Exception e){
-                e.printStackTrace(); 
-            }
-			System.out.println(Thread.currentThread().getName()+"\t停车3秒后离开车位");
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		} finally {
-            //释放资源
-			semaphore.release();
-		}
-	},String.valueOf(i)).start();
+            semaphore.acquire();
+            System.out.println(Thread.currentThread().getName()+"\t抢到车位");
+            try{ TimeUnit.SECONDS.sleep(3);} catch (Exception e){e.printStackTrace(); }
+	    System.out.println(Thread.currentThread().getName()+"\t停车3秒后离开车位");
+	    } 
+	    catch (InterruptedException e) {e.printStackTrace();} 
+	    //释放资源
+	    finally {semaphore.release();}
+    },String.valueOf(i)).start();
 }
 ```
 
@@ -572,24 +566,24 @@ class MyThread implements Callable<Integer> {
 
 ```java
 public void increment() throws InterruptedException {
-	lock.lock();
-	try {
-		//1 判断 如果number=1，那么就等待，停止生产
-		while (number != 0) {
-        //等待，不能生产
-        condition.await();
+    lock.lock();
+    try {
+        //1 判断 如果number=1，那么就等待，停止生产
+        while (number != 0) {
+            //等待，不能生产
+            condition.await();
     	}
 	//2 干活 否则，进行生产
 	number++;
-    System.out.println(Thread.currentThread().getName() + "\t" + number);
+        System.out.println(Thread.currentThread().getName() + "\t" + number);
 	//3 通知唤醒 然后唤醒消费线程
 	condition.signalAll();
     } catch (Exception e) {
-		e.printStackTrace();
-	} finally {
+        e.printStackTrace();
+    } finally {
         //最后解锁
-		lock.unlock();
-	}
+        lock.unlock();
+    }
 }
 ```
 
@@ -599,19 +593,19 @@ public void increment() throws InterruptedException {
 
 ```java
 public void myProd() throws Exception {
-	String data = null;
-	boolean retValue;
-	while (FLAG) {
-		data = atomicInteger.incrementAndGet() + "";//++i
-		retValue = blockingQueue.offer(data, 2L, TimeUnit.SECONDS);
+    String data = null;
+    boolean retValue;
+    while (FLAG) {
+        data = atomicInteger.incrementAndGet() + "";//++i
+        retValue = blockingQueue.offer(data, 2L, TimeUnit.SECONDS);
         if (retValue) {
-			System.out.println(Thread.currentThread().getName() + "\t" + "插入队列" + data + "成功");
-		} else {
-			System.out.println(Thread.currentThread().getName() + "\t" + "插入队列" + data + "失败");
-		}
+            System.out.println(Thread.currentThread().getName() + "\t" + "插入队列" + data + "成功");
+        } else {
+            ystem.out.println(Thread.currentThread().getName() + "\t" + "插入队列" + data + "失败");
+        }
         TimeUnit.SECONDS.sleep(1);
-	}
-System.out.println(Thread.currentThread().getName() + "\tFLAG==false，停止生产");
+    }
+    System.out.println(Thread.currentThread().getName() + "\tFLAG==false，停止生产");
 }
 ```
 
@@ -635,7 +629,7 @@ System.out.println(Thread.currentThread().getName() + "\tFLAG==false，停止生
 
 ```java
 public static ExecutorService newFixedThreadPool(int nThreads) {
-	return new ThreadPoolExecutor(nThreads, nThreads,
+    return new ThreadPoolExecutor(nThreads, nThreads,
                                   0L, TimeUnit.MILLISECONDS,
                                   new LinkedBlockingQueue<Runnable>());
 }
@@ -645,7 +639,7 @@ public static ExecutorService newFixedThreadPool(int nThreads) {
 
 ```java
 public static ExecutorService newSingleThreadExecutor() {
-	return new FinalizableDelegatedExecutorService(new ThreadPoolExecutor(1, 1,
+    return new FinalizableDelegatedExecutorService(new ThreadPoolExecutor(1, 1,
                                     0L, TimeUnit.MILLISECONDS,
                                     new LinkedBlockingQueue<Runnable>()));
 }
@@ -655,7 +649,7 @@ public static ExecutorService newSingleThreadExecutor() {
 
 ```java
 public static ExecutorService newCachedThreadPool() {
-	return new ThreadPoolExecutor(0, Integer.MAX_VALUE,
+    return new ThreadPoolExecutor(0, Integer.MAX_VALUE,
                                  60L, TimeUnit.SECONDS,
                                  new SynchronousQueue<Runnable>());
 }
