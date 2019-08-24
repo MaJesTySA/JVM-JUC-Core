@@ -126,7 +126,7 @@ main	 mission is over. main get number value: 60
 volatile并**不能保证操作的原子性**。这是因为，比如一条number++的操作，会形成3条指令。
 
 ```assembly
-getfield    //读
+getfield        //读
 iconst_1	//++常量1
 iadd		//加操作
 putfield	//写操作
