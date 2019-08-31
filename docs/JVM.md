@@ -307,13 +307,13 @@ java.lang.OutOfMemoryError: GC overhead limit exceeded
 
 ![](https://raw.githubusercontent.com/MaJesTySA/JVM-JUC-Core/master/imgs/GCbq.png)
 
-![](https://raw.githubusercontent.com/MaJesTySA/JVM-JUC-Core/master/imgs/GCbq2.png)
+![](https://raw.githubusercontent.com/MaJesTySA/JVM-JUC-Core/master/imgs/GCbz.png)
 
 ### 标记清除
 
 ![](https://raw.githubusercontent.com/MaJesTySA/JVM-JUC-Core/master/imgs/GCbq.png)
 
-![](https://raw.githubusercontent.com/MaJesTySA/JVM-JUC-Core/master/imgs/GCbz.png)
+![](https://raw.githubusercontent.com/MaJesTySA/JVM-JUC-Core/master/imgs/GCbq2.png)
 
 ### 复制算法
 
