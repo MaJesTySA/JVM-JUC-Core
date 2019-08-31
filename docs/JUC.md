@@ -221,7 +221,7 @@ public class SingletonDemo {
 这个漏洞比较tricky，很难捕捉，但是是存在的。`instance=new SingletonDemo();`可以大致分为三步
 
 ```java
-memory = allocate(); //1.分配内存
+memory = allocate();     //1.分配内存
 instance(memory);	 //2.初始化对象
 instance = memory;	 //3.设置引用地址
 ```
